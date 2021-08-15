@@ -225,16 +225,15 @@ class MainWindow(QMainWindow):
     # mqtt send
     def mqtt_send(self):
         if self.mqtt_state:
-            msg = {'user':self.le_name.text(), 'content':self.le_send_text.text(), 'target':'null', 'uuid':self.uuid}
-            self.client.publish('mchat', payload=json.dumps(msg), qos=0) 
-            self.le_send_text.setText('')
+            try:
+                msg = {'user':self.le_name.text(), 'content':self.le_send_text.text(), 'target':'null', 'uuid':self.uuid}
+                self.client.publish('mchat', payload=json.dumps(msg), qos=0) 
+                self.le_send_text.setText('')
+            except Exception as e:
+                print(e)
         else:
             self.ui.load_pages.txb_mqtt.append('mqtt disconnect, send fail')
             self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
-
-        # msg = {'usr':'timo', 'content':'hello', 'target':'null', 'uuid':self.uuid}
-        # self.ui.load_pages.txb_mqtt.append('test')
-        # self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
 
     # sub thread init
     def mqtt_thread_init(self):
@@ -285,6 +284,10 @@ class MainWindow(QMainWindow):
 
     # mqtt 断开
     def mqtt_client_deinit(self):
+        try:
+            thread_exit(self.mqtt_start_thread)
+        except:
+            pass
         self.ui.load_pages.txb_mqtt.append('start disconnect mqtt server')
         self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
         self.client.disconnect()
@@ -316,10 +319,6 @@ class MainWindow(QMainWindow):
 
             self.ui.load_pages.txb_mqtt.append(head + '<'+msg_dict['user']+'>'+ '['+str(msg.timestamp)+']'+msg_dict['content'])
             self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
-            # print(type(msg.timestamp))
-            # timeArray = time.localtime(int(msg.timestamp))
-            # otherStyleTime = time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
-            # print(otherStyleTime)
             
         except Exception as e:
             print(e)
