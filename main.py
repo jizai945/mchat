@@ -226,7 +226,12 @@ class MainWindow(QMainWindow):
     def mqtt_send(self):
         if self.mqtt_state:
             try:
-                msg = {'user':self.le_name.text(), 'content':self.le_send_text.text(), 'target':'null', 'uuid':self.uuid}
+                if self.cb_color.currentText() != 'null':
+                    content = "<font color=\""+self.cb_color.currentText()+"\">" +self.le_send_text.text() +"</font>"
+                else:
+                    content = self.le_send_text.text()
+                
+                msg = {'user':self.le_name.text(), 'content':content, 'target':'null', 'uuid':self.uuid}
                 self.client.publish('mchat', payload=json.dumps(msg), qos=0) 
                 self.le_send_text.setText('')
             except Exception as e:
@@ -280,7 +285,7 @@ class MainWindow(QMainWindow):
     # mqtt初始化
     def mqtt_client_init(self):
         try:
-            self.ui.load_pages.txb_mqtt.append('start connect mqtt server')
+            self.ui.load_pages.txb_mqtt.append('<font color=\"yellow\">start connect mqtt server</font>\n')
             self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
             self.client = mqtt.Client()
             self.client.on_connect = self.on_connect
@@ -290,7 +295,7 @@ class MainWindow(QMainWindow):
             self.client.subscribe('mchat', qos=0)
             self.client.loop_start()
         except Exception as e:
-            self.ui.load_pages.txb_mqtt.append('mqtt connect fail, check server')
+            self.ui.load_pages.txb_mqtt.append('mqtt connect <font color=\"red\">fail</font>, check server')
             self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
 
     # mqtt 断开
@@ -303,7 +308,7 @@ class MainWindow(QMainWindow):
             thread_exit(self.mqtt_start_thread)
         except:
             pass
-        self.ui.load_pages.txb_mqtt.append('start disconnect mqtt server')
+        self.ui.load_pages.txb_mqtt.append('<font color=\"yellow\">start disconnect mqtt server</font>\n')
         self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
         
     # 链接回调
@@ -313,7 +318,7 @@ class MainWindow(QMainWindow):
         self.icon_2 = QIcon(Functions.set_svg_icon("icon_online.svg"))
         self.btn_connect.setIcon(self.icon_2)
         self.btn_connect.setText('已连接(disconnect)')
-        self.ui.load_pages.txb_mqtt.append('mqtt server:'+self.le_ip.text()+'connect sucess')
+        self.ui.load_pages.txb_mqtt.append('mqtt server: <font color=\"blue\">'+self.le_ip.text()+'</font> connect <font color=\"green\">sucess</font>')
 
     def on_disconnect(self, client, userdata, rc):
         
@@ -322,7 +327,7 @@ class MainWindow(QMainWindow):
         self.icon_2 = QIcon(Functions.set_svg_icon("icon_close.svg"))
         self.btn_connect.setIcon(self.icon_2)
         self.btn_connect.setText('已断开(connect)')
-        self.ui.load_pages.txb_mqtt.append('mqtt server:'+self.le_ip.text()+' disconnect')
+        self.ui.load_pages.txb_mqtt.append('mqtt server: <font color=\"blue\">'+self.le_ip.text()+'</font> <font color=\"red\">disconnect</font>')
         
 
     def on_message(self, client, userdata, msg):
@@ -330,11 +335,12 @@ class MainWindow(QMainWindow):
         try:
             msg_dict = eval(msg.payload)
             # 判断方向
-            head = '->recv:'
+            head = '➡recv:'
             if msg_dict['uuid'] == self.uuid:
-                head = '<-send:'
+                head = '⬅send:'
 
-            self.ui.load_pages.txb_mqtt.append(head + '<'+msg_dict['user']+'>'+ '['+str(msg.timestamp)+']'+msg_dict['content'])
+            self.ui.load_pages.txb_mqtt.append(head + '[<font color=\"green\">'+msg_dict['user']+'</font>]'+ 
+                    '['+str(msg.timestamp)+']'+ msg_dict['content']+' ')
             self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
             
         except Exception as e:

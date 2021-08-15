@@ -620,6 +620,10 @@ class SetupMainWindow:
         self.btn_send.setMinimumHeight(40)
         self.btn_send.setIcon(self.icon_2)
 
+        self.cb_color = QComboBox()
+        color_list = ['null', 'blue', 'green', 'red', 'purple', 'orange', 'white', 'black', 'gray']
+        for co in color_list:
+            self.cb_color.addItem(co)
 
         # ADD WIDGETS
         self.ui.load_pages.row_1_layout.addWidget(self.circular_progress_1)
@@ -645,7 +649,8 @@ class SetupMainWindow:
         self.ui.load_pages.page3_hlayout_1.addWidget(self.btn_clear)
         self.ui.load_pages.page3_hlayout_2.addWidget(self.le_send_text)
         self.ui.load_pages.page3_hlayout_2.addWidget(self.btn_send)
-
+        self.ui.load_pages.page3_hlayout_2.addWidget(self.cb_color)
+        
         self.btn_connect.clicked.connect(self.mqtt_state_change)
         self.btn_clear.clicked.connect(self.mqtt_msg_clear)
         self.btn_send.clicked.connect(self.mqtt_send)
