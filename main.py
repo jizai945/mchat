@@ -237,6 +237,7 @@ class MainWindow(QMainWindow):
 
     # sub thread init
     def mqtt_thread_init(self):
+        self.lock = threading.Lock()
         self.uuid = get_mac_address()
         self.mqtt_state = False
         self.ui_to_mqtt_q = queue.Queue()
@@ -253,11 +254,21 @@ class MainWindow(QMainWindow):
                 recv = self.ui_to_mqtt_q.get()
                 # mqtt 初始化
                 if recv['msg'] == 'client init':
-                    try:
-                        thread_exit(self.mqtt_start_thread)
-                    except:
-                        pass
-                    self.mqtt_start_thread = thread_run(self.mqtt_client_init)
+                    if not self.mqtt_state:
+                        try:
+                            self.client.disconnect()
+                        except Exception as e:
+                            print(e)
+
+                        try:
+                            if self.mqtt_start_thread:
+                                if not self.mqtt_start_thread.is_alive():
+                                    self.mqtt_start_thread = thread_run(self.mqtt_client_init)
+                                else:
+                                    print("???")
+                        except:
+                            self.mqtt_start_thread = thread_run(self.mqtt_client_init)
+
                 # mqtt断开
                 elif recv['msg'] == 'client disconnect':
                     try:
@@ -285,12 +296,16 @@ class MainWindow(QMainWindow):
     # mqtt 断开
     def mqtt_client_deinit(self):
         try:
+            self.client.disconnect()
+        except Exception as e:
+            print(e)
+        try:
             thread_exit(self.mqtt_start_thread)
         except:
             pass
         self.ui.load_pages.txb_mqtt.append('start disconnect mqtt server')
         self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
-        self.client.disconnect()
+        
     # 链接回调
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code: " + str(rc))
@@ -301,12 +316,14 @@ class MainWindow(QMainWindow):
         self.ui.load_pages.txb_mqtt.append('mqtt server:'+self.le_ip.text()+'connect sucess')
 
     def on_disconnect(self, client, userdata, rc):
+        
         print("disConnected with result code: " + str(rc))
         self.mqtt_state = False
         self.icon_2 = QIcon(Functions.set_svg_icon("icon_close.svg"))
         self.btn_connect.setIcon(self.icon_2)
         self.btn_connect.setText('已断开(connect)')
         self.ui.load_pages.txb_mqtt.append('mqtt server:'+self.le_ip.text()+' disconnect')
+        
 
     def on_message(self, client, userdata, msg):
         print(msg.topic + " " + str(msg.payload))
