@@ -528,20 +528,31 @@ class SetupMainWindow:
             self.table_widget.setRowHeight(row_number, 22)
 
         # PAGE 3
-        self.btn_name = PyPushButton(
-            text = "user name",
+        self.le_ip= PyLineEdit(
+            text = "159.75.74.72",
+            place_holder_text = "Place holder text",
             radius = 8,
+            border_size = 2,
             color = self.themes["app_color"]["text_foreground"],
+            selection_color = self.themes["app_color"]["white"],
             bg_color = self.themes["app_color"]["dark_one"],
-            bg_color_hover = self.themes["app_color"]["dark_three"],
-            bg_color_pressed = self.themes["app_color"]["dark_four"]
+            bg_color_active = self.themes["app_color"]["dark_three"],
+            context_color = self.themes["app_color"]["context_color"]
         )
+        self.le_ip.setMinimumHeight(30)
 
-        
-        self.icon_2 = QIcon(Functions.set_svg_icon("icon_close.svg"))
-        # self.icon_2 = QIcon(Functions.set_svg_icon("icon_online.svg"))
-        self.btn_name.setMinimumHeight(40)
-        self.btn_name.setIcon(self.icon_2)
+        self.le_port= PyLineEdit(
+            text = "1883",
+            place_holder_text = "Place holder text",
+            radius = 8,
+            border_size = 2,
+            color = self.themes["app_color"]["text_foreground"],
+            selection_color = self.themes["app_color"]["white"],
+            bg_color = self.themes["app_color"]["dark_one"],
+            bg_color_active = self.themes["app_color"]["dark_three"],
+            context_color = self.themes["app_color"]["context_color"]
+        )
+        self.le_port.setMinimumHeight(30)
 
         self.le_name = PyLineEdit(
             text = "",
@@ -556,6 +567,20 @@ class SetupMainWindow:
         )
         self.le_name.setMinimumHeight(30)
         self.le_name.setText('root')
+
+        self.btn_connect = PyPushButton(
+            text = "已断开(connect)",
+            radius = 8,
+            color = self.themes["app_color"]["text_foreground"],
+            bg_color = self.themes["app_color"]["dark_one"],
+            bg_color_hover = self.themes["app_color"]["dark_three"],
+            bg_color_pressed = self.themes["app_color"]["dark_four"]
+        )
+        
+        self.icon_2 = QIcon(Functions.set_svg_icon("icon_close.svg"))
+        # self.icon_2 = QIcon(Functions.set_svg_icon("icon_online.svg"))
+        self.btn_connect.setMinimumHeight(40)
+        self.btn_connect.setIcon(self.icon_2)
 
         self.btn_clear = PyPushButton(
             text = "清空消息",
@@ -613,12 +638,15 @@ class SetupMainWindow:
         self.ui.load_pages.row_4_layout.addWidget(self.line_edit)
         self.ui.load_pages.row_5_layout.addWidget(self.table_widget)
 
-        self.ui.load_pages.page3_hlayout_1.addWidget(self.btn_name)
+        self.ui.load_pages.page3_hlayout_1.addWidget(self.le_ip)
+        self.ui.load_pages.page3_hlayout_1.addWidget(self.le_port)
         self.ui.load_pages.page3_hlayout_1.addWidget(self.le_name)
+        self.ui.load_pages.page3_hlayout_1.addWidget(self.btn_connect)
         self.ui.load_pages.page3_hlayout_1.addWidget(self.btn_clear)
         self.ui.load_pages.page3_hlayout_2.addWidget(self.le_send_text)
         self.ui.load_pages.page3_hlayout_2.addWidget(self.btn_send)
 
+        self.btn_connect.clicked.connect(self.mqtt_state_change)
         self.btn_clear.clicked.connect(self.mqtt_msg_clear)
         self.btn_send.clicked.connect(self.mqtt_send)
 

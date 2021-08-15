@@ -50,7 +50,6 @@ import paho.mqtt.client as mqtt
 os.environ["QT_FONT_DPI"] = "96"
 # IF IS 4K MONITOR ENABLE 'os.environ["QT_SCALE_FACTOR"] = "2"'
 
-server_ip = '159.75.74.72'
 
 # MAIN WINDOW
 # ///////////////////////////////////////////////////////////////
@@ -69,13 +68,13 @@ class MainWindow(QMainWindow):
         settings = Settings()
         self.settings = settings.items
 
-        # sub thread init
-        self.mqtt_thread_init()
-
         # SETUP MAIN WINDOW
         # ///////////////////////////////////////////////////////////////
         self.hide_grips = True # Show/Hide resize grips
         SetupMainWindow.setup_gui(self)
+
+        # sub thread init
+        self.mqtt_thread_init()
 
         # SHOW MAIN WINDOW
         # ///////////////////////////////////////////////////////////////
@@ -253,30 +252,58 @@ class MainWindow(QMainWindow):
 
             while not self.ui_to_mqtt_q.empty():
                 recv = self.ui_to_mqtt_q.get()
+                # mqtt 初始化
                 if recv['msg'] == 'client init':
-                    self.mqtt_client_init()
+                    try:
+                        thread_exit(self.mqtt_start_thread)
+                    except:
+                        pass
+                    self.mqtt_start_thread = thread_run(self.mqtt_client_init)
+                # mqtt断开
+                elif recv['msg'] == 'client disconnect':
+                    try:
+                        thread_exit(self.mqtt_stop_thread)
+                    except:
+                        pass
+                    self.mqtt_stop_thread = thread_run(self.mqtt_client_deinit)
 
+    # mqtt初始化
     def mqtt_client_init(self):
-        self.client = mqtt.Client()
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-        self.client.connect(server_ip, 1883, 60) # 600为keepalive的时间间隔
-        self.client.subscribe('mchat', qos=0)
-        self.client.loop_start()
+        try:
+            self.ui.load_pages.txb_mqtt.append('start connect mqtt server')
+            self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
+            self.client = mqtt.Client()
+            self.client.on_connect = self.on_connect
+            self.client.on_message = self.on_message
+            self.client.on_disconnect = self.on_disconnect
+            self.client.connect(self.le_ip.text(), int(self.le_port.text()), 30) # 600为keepalive的时间间隔
+            self.client.subscribe('mchat', qos=0)
+            self.client.loop_start()
+        except Exception as e:
+            self.ui.load_pages.txb_mqtt.append('mqtt connect fail, check server')
+            self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
 
+    # mqtt 断开
+    def mqtt_client_deinit(self):
+        self.ui.load_pages.txb_mqtt.append('start disconnect mqtt server')
+        self.ui.load_pages.txb_mqtt.moveCursor(self.ui.load_pages.txb_mqtt.textCursor().End)  #文本框显示到底部
+        self.client.disconnect()
+    # 链接回调
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code: " + str(rc))
-        if rc == 0:
-            self.mqtt_state = True
-            self.icon_2 = QIcon(Functions.set_svg_icon("icon_online.svg"))
-            self.btn_name.setIcon(self.icon_2)
-            self.ui.load_pages.txb_mqtt.append('mqtt server:'+server_ip+'connect sucess')
-        else:
-            self.mqtt_state = False
-            self.icon_2 = QIcon(Functions.set_svg_icon("icon_close.svg"))
-            self.btn_name.setIcon(self.icon_2)
-            self.ui.load_pages.txb_mqtt.append('mqtt server:'+server_ip+' connect fail')
+        self.mqtt_state = True
+        self.icon_2 = QIcon(Functions.set_svg_icon("icon_online.svg"))
+        self.btn_connect.setIcon(self.icon_2)
+        self.btn_connect.setText('已连接(disconnect)')
+        self.ui.load_pages.txb_mqtt.append('mqtt server:'+self.le_ip.text()+'connect sucess')
 
+    def on_disconnect(self, client, userdata, rc):
+        print("disConnected with result code: " + str(rc))
+        self.mqtt_state = False
+        self.icon_2 = QIcon(Functions.set_svg_icon("icon_close.svg"))
+        self.btn_connect.setIcon(self.icon_2)
+        self.btn_connect.setText('已断开(connect)')
+        self.ui.load_pages.txb_mqtt.append('mqtt server:'+self.le_ip.text()+' disconnect')
 
     def on_message(self, client, userdata, msg):
         print(msg.topic + " " + str(msg.payload))
@@ -302,6 +329,14 @@ class MainWindow(QMainWindow):
         if QKeyEvent.key()== Qt.Key_Enter or QKeyEvent.key()== Qt.Key_Return: 
             if self.ui.load_pages.pages.currentIndex() == 2:
                 self.mqtt_send()
+
+    def mqtt_state_change(self):
+        if self.mqtt_state == False:
+            post = {'msg':'client init'}
+            self.ui_to_mqtt_q.put(post)
+        else:
+            post = {'msg':'client disconnect'}
+            self.ui_to_mqtt_q.put(post)
 
 def get_mac_address(): 
     mac=uuid.UUID(int = uuid.getnode()).hex[-12:] 
